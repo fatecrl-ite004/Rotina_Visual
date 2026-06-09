@@ -23,7 +23,7 @@ class MenuLateral extends StatelessWidget {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(24),
-              color: Theme.of(context).colorScheme.primaryContainer,
+              color: Theme.of(context).appBarTheme.backgroundColor,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

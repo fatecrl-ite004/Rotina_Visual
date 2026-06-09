@@ -108,7 +108,7 @@ class _HomeScreenState extends State<HomeScreen> {
       // BottomNavigationBar (footer)
       bottomNavigationBar: BottomAppBar(
         height: 70,
-        color: Theme.of(context).colorScheme.primaryContainer,
+        color: Theme.of(context).appBarTheme.backgroundColor,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
@@ -146,7 +146,7 @@ class _HomeScreenState extends State<HomeScreen> {
               width: 56,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Theme.of(context).colorScheme.primary,
+                color: Colors.grey[900],
               ),
               child: IconButton(
                 icon: const Icon(
@@ -166,6 +166,7 @@ class _HomeScreenState extends State<HomeScreen> {
               icon: const Icon(
                 Icons.image,
                 size: 32,
+                color: Color.fromRGBO(117, 117, 117, 1),
               ),
               onPressed: () {
                 // Placeholder: navegar para tela de pictogramas
