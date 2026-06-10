@@ -3,6 +3,7 @@ import '../widgets/menu_lateral.dart';
 import '../widgets/overlay_nova_atividade.dart';
 import '../widgets/item_atividade.dart';
 import '../models/atividade.dart';
+import '../models/rotina.dart';  // NOVO
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -12,8 +13,13 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  // Mock de atividades para teste (depois substitui por SQLite)
-  List<Atividade> _atividades = [];
+  // NOVO: Armazenamento interno (mapa de rotinas)
+  Map<String, List<Atividade>> _todasAtividades = {};
+  List<Rotina> _rotinas = [];
+  String _rotinaAtualId = '';
+  
+  // A lista _atividades agora é um GETTER que retorna as atividades da rotina atual
+  List<Atividade> get _atividades => _todasAtividades[_rotinaAtualId] ?? [];
 
   // Controle do modo de visualização
   bool _modoApenasVisualizacao = false;
@@ -22,27 +28,85 @@ class _HomeScreenState extends State<HomeScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
+  void initState() {
+    super.initState();
+    _carregarDadosIniciais();
+  }
+
+  void _carregarDadosIniciais() {
+    // Criar rotina padrão
+    final rotinaPadrao = Rotina(id: '1', nome: 'Minha Rotina');
+    _rotinas = [rotinaPadrao];
+    _rotinaAtualId = '1';
+    _todasAtividades['1'] = [];
+  }
+
+  // NOVO: Criar nova rotina
+  // NOVO: Criar nova rotina (recebe String, mas o MenuLateral espera VoidCallback)
+void _criarNovaRotina() {
+  // Gera um nome padrão
+  final novoNome = 'Nova Rotina ${_rotinas.length + 1}';
+  final novaId = DateTime.now().millisecondsSinceEpoch.toString();
+  final novaRotina = Rotina(id: novaId, nome: novoNome);
+  
+  setState(() {
+    _rotinas.add(novaRotina);
+    _todasAtividades[novaId] = [];
+  });
+}
+
+// NOVO: Excluir rotina (recebe Rotina, não String)
+void _excluirRotina(Rotina rotina) {
+  if (_rotinas.length <= 1) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Você precisa ter pelo menos uma rotina!')),
+    );
+    return;
+  }
+  
+  setState(() {
+    _rotinas.removeWhere((r) => r.id == rotina.id);
+    _todasAtividades.remove(rotina.id);
+    
+    if (_rotinaAtualId == rotina.id) {
+      _rotinaAtualId = _rotinas.first.id;
+    }
+  });
+}
+
+// NOVO: Selecionar rotina (recebe Rotina, não String)
+void _selecionarRotina(Rotina rotina) {
+  setState(() {
+    _rotinaAtualId = rotina.id;
+  });
+  Navigator.pop(context);
+}
+
+  @override
   Widget build(BuildContext context) {
+    // Obter nome da rotina atual
+    final rotinaAtual = _rotinas.firstWhere(
+      (r) => r.id == _rotinaAtualId,
+      orElse: () => _rotinas.first,
+    );
+    
     return Scaffold(
       key: _scaffoldKey,
       
-      // Drawer (menu lateral)
+      // Drawer (menu lateral) - ATUALIZADO
       drawer: MenuLateral(
-        rotinaAtual: "Minha Rotina",
-        onRotinaSelecionada: (nomeRotina) {
-          // Placeholder: futuramente carregar rotina selecionada
-          setState(() {
-            // Lógica para trocar rotina
-          });
-          Navigator.pop(context);
-        },
+        rotinas: _rotinas,
+        rotinaAtualId: _rotinaAtualId,
+        onSelecionarRotina: _selecionarRotina,
+        onCriarNovaRotina: _criarNovaRotina,
+        onExcluirRotina: _excluirRotina,
       ),
       
-      // AppBar
+      // AppBar - ATUALIZADO (mostra nome da rotina)
       appBar: AppBar(
-        title: const Text(
-          'Rotina Visual',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: Text(
+          rotinaAtual.nome,
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
         leading: IconButton(
@@ -56,7 +120,6 @@ class _HomeScreenState extends State<HomeScreen> {
           IconButton(
             icon: const Icon(Icons.settings),
             onPressed: () {
-              // Placeholder: navegar para configurações
               Navigator.pushNamed(context, '/configuracoes');
             },
             tooltip: 'Configurações',
@@ -64,7 +127,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       
-      // Corpo da página (lista de atividades)
+      // Corpo da página (lista de atividades) - QUASE IGUAL
       body: _atividades.isEmpty
           ? Center(
               child: Column(
@@ -83,29 +146,46 @@ class _HomeScreenState extends State<HomeScreen> {
                       color: Colors.grey[600],
                     ),
                   ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'na rotina "${rotinaAtual.nome}"',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[500],
+                    ),
+                  ),
                 ],
               ),
             )
           : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: _atividades.length,
-              itemBuilder: (context, index) {
-                return ItemAtividade(
-                  atividade: _atividades[index],
-                  modoApenasVisualizacao: _modoApenasVisualizacao,
-                  onEdit: (atividade) {
-                    // Placeholder: editar atividade
-                  },
-                  onDelete: (atividade) {
-                    setState(() {
-                      _atividades.remove(atividade);
-                    });
-                  },
-                );
-              },
-            ),
+  padding: const EdgeInsets.all(16),
+  itemCount: _atividades.length,
+  itemBuilder: (context, index) {
+    return ItemAtividade(
+      atividade: _atividades[index],
+      modoApenasVisualizacao: _modoApenasVisualizacao,
+      onEdit: (atividadeAntiga, atividadeEditada) {
+        setState(() {
+          final idx = _atividades.indexWhere((a) => a.id == atividadeAntiga.id);
+          if (idx != -1) {
+            _todasAtividades[_rotinaAtualId]![idx] = atividadeEditada;
+          }
+        });
+        // ← NÃO precisa retornar nada, só executa
+      },
+      onDelete: (atividade) {
+        setState(() {
+          _todasAtividades[_rotinaAtualId]!.remove(atividade);
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Atividade excluída')),
+        );
+      },
+    );
+  },
+),
       
-      // BottomNavigationBar (footer)
+      // BottomNavigationBar (footer) - QUASE IGUAL
       bottomNavigationBar: BottomAppBar(
         height: 70,
         color: Theme.of(context).appBarTheme.backgroundColor,
@@ -125,7 +205,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 setState(() {
                   _modoApenasVisualizacao = !_modoApenasVisualizacao;
                 });
-                // Placeholder: mostrar snackbar informando
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
@@ -146,7 +225,7 @@ class _HomeScreenState extends State<HomeScreen> {
               width: 56,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.grey[900],
+                color: Theme.of(context).primaryColor, // COR DO TEMA
               ),
               child: IconButton(
                 icon: const Icon(
@@ -169,7 +248,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 color: Color.fromRGBO(117, 117, 117, 1),
               ),
               onPressed: () {
-                // Placeholder: navegar para tela de pictogramas
                 Navigator.pushNamed(context, '/pictogramas');
               },
               tooltip: 'Pictogramas',
@@ -181,24 +259,34 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showNovaAtividadeOverlay() {
-  showDialog(
-    context: context,
-    builder: (BuildContext dialogContext) {
-      return Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: OverlayNovaAtividade(
-            onSalvar: (novaAtividade) {
-              setState(() {
-                _atividades.add(novaAtividade);
-              });
-              Navigator.pop(dialogContext);
-            },
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: OverlayNovaAtividade(
+              onSalvar: (novaAtividade) {
+                setState(() {
+                  // Adiciona a rotinaId aqui!
+                  final atividadeCompleta = Atividade(
+                    id: novaAtividade.id,
+                    nome: novaAtividade.nome,
+                    horarioInicio: novaAtividade.horarioInicio,
+                    horarioTermino: novaAtividade.horarioTermino,
+                    pictogramaPath: novaAtividade.pictogramaPath,
+                    isMudanca: novaAtividade.isMudanca,
+                    rotinaId: _rotinaAtualId,  // ← VINCULA À ROTINA ATUAL
+                  );
+                  _todasAtividades[_rotinaAtualId]!.add(atividadeCompleta);
+                });
+                Navigator.pop(dialogContext);
+              },
+            ),
           ),
-        ),
-      );
-    },
-  );
-}
+        );
+      },
+    );
+  }
 }

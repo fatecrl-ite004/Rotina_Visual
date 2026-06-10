@@ -58,23 +58,24 @@ class _OverlayNovaAtividadeState extends State<OverlayNovaAtividade> {
   }
 
   void _salvar() {
-    if (_nomeController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor, digite o nome da atividade')),
-      );
-      return;
-    }
-
-    final atividade = Atividade(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      nome: _nomeController.text.trim(),
-      horarioInicio: _horaInicio,
-      horarioTermino: _horaTermino,
-      isMudanca: _isMudanca,
+  if (_nomeController.text.trim().isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Por favor, digite o nome da atividade')),
     );
-    
-    widget.onSalvar(atividade);
+    return;
   }
+
+  final atividade = Atividade(
+    id: DateTime.now().millisecondsSinceEpoch.toString(),
+    nome: _nomeController.text.trim(),
+    horarioInicio: _horaInicio,
+    horarioTermino: _horaTermino,
+    isMudanca: _isMudanca,
+    // ⬅️ NÃO coloque rotinaId aqui!
+  );
+  
+  widget.onSalvar(atividade);
+}
 
   @override
   Widget build(BuildContext context) {

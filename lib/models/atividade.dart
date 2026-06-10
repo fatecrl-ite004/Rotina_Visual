@@ -5,6 +5,7 @@ class Atividade {
   String horarioTermino;
   String? pictogramaPath;
   bool isMudanca;
+  String? rotinaId; 
 
   Atividade({
     required this.id,
@@ -13,5 +14,6 @@ class Atividade {
     required this.horarioTermino,
     this.pictogramaPath,
     this.isMudanca = false,
+    this.rotinaId,  // NÃO É REQUIRED
   });
 }

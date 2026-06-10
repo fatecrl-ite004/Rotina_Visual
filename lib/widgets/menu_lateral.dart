@@ -1,29 +1,32 @@
 import 'package:flutter/material.dart';
+import '../models/rotina.dart';
 
 class MenuLateral extends StatelessWidget {
-  final String rotinaAtual;
-  final Function(String) onRotinaSelecionada;
+  final List<Rotina> rotinas;
+  final String rotinaAtualId;
+  final Function(Rotina) onSelecionarRotina;
+  final VoidCallback onCriarNovaRotina;
+  final Function(Rotina) onExcluirRotina;
 
   const MenuLateral({
     super.key,
-    required this.rotinaAtual,
-    required this.onRotinaSelecionada,
+    required this.rotinas,
+    required this.rotinaAtualId,
+    required this.onSelecionarRotina,
+    required this.onCriarNovaRotina,
+    required this.onExcluirRotina,
   });
 
   @override
   Widget build(BuildContext context) {
-    // Mock de rotinas (depois substitui por SQLite)
-    final List<String> rotinas = ['Minha Rotina', 'Rotina da Tarde', 'Fim de Semana'];
-
     return Drawer(
       child: SafeArea(
         child: Column(
           children: [
-            // Cabeçalho do menu
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(24),
-              color: Theme.of(context).appBarTheme.backgroundColor,
+              color: Theme.of(context).colorScheme.primaryContainer,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -33,17 +36,21 @@ class MenuLateral extends StatelessWidget {
                     'Minhas Rotinas',
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${rotinas.length} rotina(s)',
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                  ),
                 ],
               ),
             ),
             
-            // Lista de rotinas
             Expanded(
               child: ListView.builder(
                 itemCount: rotinas.length,
                 itemBuilder: (context, index) {
                   final rotina = rotinas[index];
-                  final isAtual = rotina == rotinaAtual;
+                  final isAtual = rotina.id == rotinaAtualId;
                   
                   return ListTile(
                     leading: Icon(
@@ -51,38 +58,60 @@ class MenuLateral extends StatelessWidget {
                       color: isAtual ? Colors.green : null,
                     ),
                     title: Text(
-                      rotina,
+                      rotina.nome,
                       style: TextStyle(
                         fontWeight: isAtual ? FontWeight.bold : FontWeight.normal,
                       ),
                     ),
-                    trailing: isAtual 
+                    subtitle: Text(
+                      '${rotina.atividades.length} atividade(s)',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    trailing: isAtual
                         ? const Icon(Icons.visibility, size: 18)
-                        : null,
-                    onTap: () {
-                      onRotinaSelecionada(rotina);
-                    },
+                        : IconButton(
+                            icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
+                            onPressed: () => _confirmarExclusao(context, rotina),
+                          ),
+                    onTap: isAtual ? null : () => onSelecionarRotina(rotina),
                   );
                 },
               ),
             ),
             
-            // Botão criar nova rotina
             const Divider(),
             ListTile(
               leading: const Icon(Icons.add_circle_outline),
               title: const Text('Criar nova rotina'),
-              onTap: () {
-                // Placeholder: abrir overlay para criar rotina
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Funcionalidade em desenvolvimento')),
-                );
-              },
+              onTap: onCriarNovaRotina,
             ),
             const SizedBox(height: 16),
           ],
         ),
+      ),
+    );
+  }
+
+  void _confirmarExclusao(BuildContext context, Rotina rotina) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Excluir rotina'),
+        content: Text('Tem certeza que deseja excluir "${rotina.nome}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              onExcluirRotina(rotina);
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Excluir'),
+          ),
+        ],
       ),
     );
   }
